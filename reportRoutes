@@ -1,0 +1,97 @@
+const express = require("express");
+const TrailReport = require("../models/trailReport");
+const router = express.Router();
+const { Op } = require("sequelize");
+
+//Route to post a report to the database
+router.post("/", async (req, res) => {
+  try {
+    const report = await TrailReport.create(req.body);
+    console.log("Received:", req.body);
+    res.status(201).json(report);
+  } catch (error) {
+    console.error(error);
+    res.status(400).send("Bad Request");
+  }
+});
+//Route to get all trail names
+router.get("/trailnames", async (req, res) => {
+  try {
+    // Unique trail names
+    const trailNames = await TrailReport.findAll({
+      attributes: ["trail_name"],
+      group: ["trail_name"],
+    });
+
+    // Extract just the names
+    const names = trailNames.map((trail) => trail.trail_name);
+    res.json(names);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+//Route to get all urgent reports for a given trail(s)
+router.get("/urgent", async (req, res) => {
+  console.log("Urgent route hit!");
+  try {
+    const trailName = req.query.trailName;
+    console.log("Raw trailName:", trailName);
+    if (trailName) {
+      const selectedTrails = trailName.split(",").map((trail) => trail.trim());
+      console.log("Parsed trails:", selectedTrails);
+
+      const urgentReports = await TrailReport.findAll({
+        where: {
+          trail_name: {
+            [Op.in]: selectedTrails,
+          },
+          is_urgent: 1,
+        },
+      });
+      console.log("Urgent reports from DB:", urgentReports);
+
+      res.json(urgentReports);
+    } else {
+      // If trailName is missing or undefined
+      console.warn("Missing or undefined trailName");
+      res.status(400).send("trailName is required");
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+//Route to get all reports for a given trail
+router.get("/reports", async (req, res) => {
+  const trailName = req.query.trailName;
+  if (!trailName) {
+    return res.status(400).send("Trail name is required.");
+  }
+  try {
+    const reports = await TrailReport.findAll({
+      where: {
+        trail_name: trailName,
+      },
+      order: [
+        ["createdAt", "DESC"], // Sort by newest first
+      ],
+    });
+    res.json(reports);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+//Route to get all reports
+router.get("/", async (req, res) => {
+  try {
+    const reports = await TrailReport.findAll();
+    res.json(reports);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+
+module.exports = router;
