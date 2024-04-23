@@ -1,0 +1,1 @@
+Bent Creek Buddy is an Android app developed as my Capstone project, designed to enhance the mountain biking experience in the Bent Creek trail system. This app serves as a dynamic platform where users can both submit and view real-time trail condition reports, fostering a well-informed biking community.
